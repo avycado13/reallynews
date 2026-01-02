@@ -1,65 +1,366 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrendingUpIcon } from "lucide-react";
+import db from "@/lib/db/drizzle";
+import { eq } from "drizzle-orm";
+import { articlesTable, reportersTable } from "@/lib/db/schema";
+import { Streamdown } from "streamdown";
 
-export default function Home() {
+const categoryColorMap: { [key: string]: string } = {
+  Technology: "bg-blue-500",
+  Business: "bg-green-500",
+  Environment: "bg-emerald-500",
+  Sports: "bg-orange-500",
+  Entertainment: "bg-purple-500",
+  Health: "bg-red-500",
+};
+
+function formatDate(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `${diffMins} minutes ago`;
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return new Date(date).toLocaleDateString();
+}
+
+function getCategoryFromTitle(title: string): string {
+  const categories = Object.keys(categoryColorMap);
+  for (const cat of categories) {
+    if (title.toLowerCase().includes(cat.toLowerCase())) {
+      return cat;
+    }
+  }
+  return "Satire";
+}
+
+export default async function Home() {
+  const articleRecords = await db
+    .select({
+      id: articlesTable.id,
+      title: articlesTable.title,
+      excerpt: articlesTable.excerpt,
+      content: articlesTable.content,
+      createdAt: articlesTable.createdAt,
+      reporterId: articlesTable.reporterId,
+      reporterName: reportersTable.name,
+    })
+    .from(articlesTable)
+    .leftJoin(reportersTable, eq(articlesTable.reporterId, reportersTable.id))
+    .orderBy(articlesTable.createdAt)
+    .limit(10);
+
+  const articles = articleRecords.map((article) => {
+    const category = getCategoryFromTitle(article.title);
+    return {
+      id: article.id,
+      title: article.title,
+      excerpt: article.excerpt || article.content.substring(0, 150) + "...",
+      category,
+      date: formatDate(article.createdAt!),
+      image: categoryColorMap[category] || "bg-blue-500",
+      author: article.reporterName || "Unknown",
+    };
+  });
+
+  const featuredArticle =
+    articles.length > 0
+      ? articles[new Date().getDate() % articles.length]
+      : null;
+
+  const categories = [
+    "Technology",
+    "Business",
+    "Environment",
+    "Sports",
+    "Entertainment",
+    "Health",
+  ];
+
+  const categoryColors: { [key: string]: string } = {
+    Technology: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+    Business:
+      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+    Environment:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100",
+    Sports:
+      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100",
+    Entertainment:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100",
+    Health: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-white dark:bg-black">
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto px-4 py-8 sm:px-6">
+        {/* Featured Article */}
+        {featuredArticle && (
+          <div className="mb-12">
+            <Card className="overflow-hidden border-gray-200 dark:border-gray-800">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+                <div className="md:col-span-2 p-6 flex flex-col justify-between">
+                  <div>
+                    <Badge
+                      className={categoryColors[featuredArticle.category]}
+                      variant="secondary"
+                    >
+                      {featuredArticle.category}
+                    </Badge>
+                    <h2 className="text-3xl font-bold text-black dark:text-white mt-4 mb-3">
+                      {featuredArticle.title}
+                    </h2>
+                    <Streamdown className="text-gray-700 dark:text-gray-300 text-lg mb-4">
+                      {featuredArticle.excerpt}
+                    </Streamdown>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <span>By {featuredArticle.author}</span>
+                    <span>{featuredArticle.date}</span>
+                  </div>
+                </div>
+                <div className={`${featuredArticle.image} h-56 md:h-auto`} />
+              </div>
+            </Card>
+          </div>
+        )}
+
+        <Separator className="my-8 bg-gray-200 dark:bg-gray-800" />
+
+        {/* Tabs Section */}
+        <Tabs defaultValue="latest" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="latest">Latest</TabsTrigger>
+            <TabsTrigger value="trending">Trending</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+          </TabsList>
+
+          {/* Latest Articles Tab */}
+          <TabsContent value="latest" className="space-y-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {articles.slice(0, 4).map((article) => (
+                <Card
+                  key={article.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-gray-200 dark:border-gray-800"
+                >
+                  <div className={`${article.image} h-48 w-full`} />
+                  <div className="p-5">
+                    <Badge
+                      className={categoryColors[article.category] + " mb-3"}
+                      variant="secondary"
+                    >
+                      {article.category}
+                    </Badge>
+                    <h3 className="text-xl font-bold text-black dark:text-white mb-2">
+                      {article.title}
+                    </h3>
+                    <Streamdown className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                      {article.excerpt}
+                    </Streamdown>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                      <span>{article.author}</span>
+                      <span>{article.date}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Trending Articles Tab */}
+          <TabsContent value="trending" className="space-y-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {articles.slice(0, 2).map((article) => (
+                <Card
+                  key={article.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-gray-200 dark:border-gray-800"
+                >
+                  <div className={`${article.image} h-48 w-full`} />
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUpIcon className="h-4 w-4 text-red-500" />
+                      <Badge
+                        className={categoryColors[article.category]}
+                        variant="secondary"
+                      >
+                        {article.category}
+                      </Badge>
+                    </div>
+                    <h3 className="text-xl font-bold text-black dark:text-white mb-2">
+                      {article.title}
+                    </h3>
+                    <Streamdown className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                      {article.excerpt}
+                    </Streamdown>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+                      <span>{article.author}</span>
+                      <span>{article.date}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories" className="space-y-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {categories.map((category) => {
+                const categoryArticles = articles.filter(
+                  (a) => a.category === category
+                );
+                return (
+                  <Card
+                    key={category}
+                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-gray-200 dark:border-gray-800"
+                  >
+                    <div
+                      className={`${categoryArticles[0]?.image} h-32 w-full`}
+                    />
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-black dark:text-white mb-3">
+                        {category}
+                      </h3>
+                      <div className="space-y-2">
+                        {categoryArticles.slice(0, 2).map((article, idx) => (
+                          <p
+                            key={idx}
+                            className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2"
+                          >
+                            {article.title}
+                          </p>
+                        ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-4 w-full text-blue-600 dark:text-blue-400 hover:text-blue-700"
+                      >
+                        View All →
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 dark:border-gray-800 mt-16">
+        <div className="max-w-6xl mx-auto px-4 py-12 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h4 className="font-bold text-black dark:text-white mb-4">
+                About
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Careers
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-black dark:text-white mb-4">
+                Legal
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-black dark:text-white mb-4">
+                Categories
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Technology
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Business
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-black dark:hover:text-white"
+                  >
+                    Science
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-black dark:text-white mb-4">
+                Subscribe
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                Get the latest news delivered to your inbox
+              </p>
+              <Button size="sm" className="w-full">
+                Subscribe
+              </Button>
+            </div>
+          </div>
+          <Separator className="my-6 bg-gray-200 dark:bg-gray-800" />
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+            © 2025 reallynews. All rights reserved.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
   );
 }
