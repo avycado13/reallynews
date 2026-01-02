@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import db from "@/lib/db/drizzle";
 import { reportersTable } from "@/lib/db/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

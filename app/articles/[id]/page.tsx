@@ -4,6 +4,7 @@ import db from "@/lib/db/drizzle";
 import { articlesTable, reportersTable } from "@/lib/db/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ArticleDetailPageProps {
   params: Promise<{ id: string }>;
@@ -88,7 +89,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
             <CardContent className="pt-6">
               {article.imageUrl && (
                 <div className="mb-6">
-                  <img
+                  <Image
                     src={article.imageUrl}
                     alt={article.title}
                     className="w-full h-96 object-cover rounded-lg"

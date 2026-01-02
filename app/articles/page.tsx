@@ -1,7 +1,16 @@
 import db from "@/lib/db/drizzle";
 import { articlesTable, reportersTable } from "@/lib/db/schema";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import Link from "next/link";
+import { eq } from "drizzle-orm";
+import Image from "next/image";
+import { SpecialLink } from "@/components/special-link";
 
 export const metadata = {
   title: "Articles",
@@ -21,19 +30,25 @@ export default async function ArticlesPage() {
       reporterId: articlesTable.reporterId,
     })
     .from(articlesTable)
-    .leftJoin(reportersTable, (t) => t.reporterId.eq(reportersTable.id));
+    .leftJoin(reportersTable, (t) => eq(reportersTable.id, t.reporterId));
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <main className="max-w-6xl mx-auto px-4 py-8 sm:px-6">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-black dark:text-white">Articles</h1>
-          <p className="text-gray-600 dark:text-gray-400">Read our latest satirical news coverage</p>
+          <h1 className="text-4xl font-bold mb-2 text-black dark:text-white">
+            Articles
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Read our latest satirical news coverage
+          </p>
         </div>
 
         {articles.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">No articles found yet.</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              No articles found yet.
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -43,7 +58,7 @@ export default async function ArticlesPage() {
                   <div className="md:flex">
                     {article.imageUrl && (
                       <div className="md:w-48 md:h-48 flex-shrink-0">
-                        <img
+                        <Image
                           src={article.imageUrl}
                           alt={article.title}
                           className="w-full h-full object-cover"
@@ -52,16 +67,12 @@ export default async function ArticlesPage() {
                     )}
                     <div className="flex-1">
                       <CardHeader>
-                        <CardTitle className="text-2xl text-black dark:text-white">{article.title}</CardTitle>
+                        <CardTitle className="text-2xl text-black dark:text-white">
+                          {article.title}
+                        </CardTitle>
                         <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
                           {article.reporterName && (
-                            <Link
-                              href={`/reporters/${article.reporterId}`}
-                              className="text-blue-600 dark:text-blue-400 hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              By {article.reporterName}
-                            </Link>
+                            <SpecialLink article={article} />
                           )}
                           {article.createdAt && (
                             <span className="block mt-1">
