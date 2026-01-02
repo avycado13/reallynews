@@ -61,6 +61,8 @@ export default async function ArticlesPage() {
                         <Image
                           src={article.imageUrl}
                           alt={article.title}
+                          width={192}
+                          height={192}
                           className="w-full h-full object-cover"
                         />
                       </div>
