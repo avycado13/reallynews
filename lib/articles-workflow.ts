@@ -1,13 +1,14 @@
 import { eq } from "drizzle-orm";
 import db from "./db/drizzle";
-import { articlesTable, reportersTable } from "./db/schema";
+import { articlesTable, reportersTable, tagsTable, articleTagsTable } from "./db/schema";
 import {
   generateArticlesForReporter,
   generateExcerpt,
   generateImageForArticle,
   moderateArticle,
+  tagArticle,
 } from "./gen-articles";
-import { ReporterSelect } from "./types";
+import type { ReporterSelect } from "./types";
 
 async function getAllReporters(): Promise<ReporterSelect[]> {
   "use step";
@@ -27,6 +28,8 @@ export async function generateSaveArticles(reporter: ReporterSelect) {
     console.log(
       `Generated ${articles.length} articles for reporter ${reporter.name}`
     );
+    // Get all available tags
+    const allTags = await db.select().from(tagsTable);
     for (const article of articles) {
       console.log(`Article Title: ${article.title}`);
       const moderateArticleResult = await moderateArticle(article);
@@ -51,6 +54,18 @@ export async function generateSaveArticles(reporter: ReporterSelect) {
         console.log(
           `Saved article "${updatedArticle[0].title}" with ID ${updatedArticle[0].id} and image URL: ${updatedArticle[0].imageUrl}`
         );
+        // Tag the article
+        const generatedTags = await tagArticle(article, allTags);
+        for (const generatedTag of generatedTags) {
+          const matchingTag = allTags.find(tag => tag.name.toLowerCase() === generatedTag.tag.toLowerCase());
+          if (matchingTag) {
+            await db.insert(articleTagsTable).values({
+              articleId: updatedArticle[0].id,
+              tagId: matchingTag.id,
+            });
+            console.log(`Tagged article with: ${generatedTag.tag}`);
+          }
+        }
     }
   } catch (error) {
     console.error("Error generating and saving articles:", error);

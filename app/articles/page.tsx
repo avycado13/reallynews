@@ -1,5 +1,5 @@
 import db from "@/lib/db/drizzle";
-import { articlesTable, reportersTable } from "@/lib/db/schema";
+import { articlesTable, reportersTable, tagsTable } from "@/lib/db/schema";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import Image from "next/image";
 import { SpecialLink } from "@/components/special-link";
+import { Footer } from "@/components/footer";
 
 export const metadata = {
   title: "Articles",
@@ -31,6 +32,8 @@ export default async function ArticlesPage() {
     })
     .from(articlesTable)
     .leftJoin(reportersTable, (t) => eq(reportersTable.id, t.reporterId));
+
+  const tags = await db.select().from(tagsTable);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
@@ -96,6 +99,7 @@ export default async function ArticlesPage() {
           </div>
         )}
       </main>
+      <Footer tags={tags} />
     </div>
   );
 }

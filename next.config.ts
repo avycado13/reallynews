@@ -5,7 +5,12 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   images: {
-    remotePatterns: [new URL("https://qpcfwfz1uay2lgkh.public.blob.vercel-storage.com")],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "qpcfwfz1uay2lgkh.public.blob.vercel-storage.com",
+      },
+    ],
   },
 };
 

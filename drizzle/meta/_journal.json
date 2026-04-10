@@ -22,6 +22,13 @@
       "when": 1767338776670,
       "tag": "0002_equal_masked_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767601915207,
+      "tag": "0003_greedy_pyro",
+      "breakpoints": true
     }
   ]
 }

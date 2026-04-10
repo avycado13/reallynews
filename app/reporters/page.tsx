@@ -1,7 +1,8 @@
 import db from "@/lib/db/drizzle";
-import { reportersTable } from "@/lib/db/schema";
+import { reportersTable, tagsTable } from "@/lib/db/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { Footer } from "@/components/footer";
 
 export const metadata = {
   title: "Reporters",
@@ -10,6 +11,7 @@ export const metadata = {
 
 export default async function ReportersPage() {
   const reporters = await db.select().from(reportersTable);
+  const tags = await db.select().from(tagsTable);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
@@ -54,6 +56,7 @@ export default async function ReportersPage() {
           </div>
         )}
       </main>
+      <Footer tags={tags} />
     </div>
   );
 }

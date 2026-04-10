@@ -4,7 +4,7 @@ import { ReporterInsertSchema } from "./types";
 
 
 
-export async function generateReporters(count: number = 5) {
+export async function generateReporters(count = 5) {
   const startTime = Date.now();
 
   try {
@@ -23,7 +23,7 @@ Make the reporters humorous and exaggerated, suitable for a satirical news organ
 You may/should make them sound exaggerated or absurd.
 `,
       output: Output.array({
-        element: ReporterInsertSchema,
+        element: ReporterInsertSchema.omit({ createdAt: true})
       }),
       prompt: `Generate ${count} unique news reporter personas for a news organization.`,
     });

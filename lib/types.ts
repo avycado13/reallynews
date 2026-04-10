@@ -1,6 +1,6 @@
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { articlesTable, reportersTable } from './db/schema';
-import z from 'zod';
+import type z from 'zod';
 
 export const ReporterSelectSchema = createSelectSchema(reportersTable);
 export const ReporterInsertSchema = createInsertSchema(reportersTable);

@@ -24,7 +24,26 @@ export const articlesTable = pgTable("articles", {
   createdAt: timestamp().notNull().defaultNow(),
 });
 
+export const tagsTable = pgTable("tags", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: text().notNull().unique(),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
+export const articleTagsTable = pgTable("article_tags", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  articleId: integer()
+    .notNull()
+    .references(() => articlesTable.id, { onDelete: "cascade" }),
+  tagId: integer()
+    .notNull()
+    .references(() => tagsTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp().notNull().defaultNow(),
+});
+
 export const Schema = {
   reportersTable,
   articlesTable,
+  tagsTable,
+  articleTagsTable,
 };

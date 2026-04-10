@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { hackclub } from "./ai";
-import { ArticleInsertSchema, ArticleSelect, ReporterSelect } from "./types";
+import { ArticleInsertSchema, type ArticleSelect, type ReporterSelect } from "./types";
 import { put } from "@vercel/blob";
 import z from "zod";
 
@@ -32,7 +32,7 @@ Notable Achievement: ${reporter.notableAchievement}
 Style Description: ${reporter.styleDescription}
 Biography: ${reporter.biography}
 
-Ensure the articles are humorous, exaggerated, and suitable for a satirical news organization.`,
+Ensure the articles are humorous, exaggerated, and suitable for a satirical news organization. Do not prepend the title or content with any labels like 'Title: ' or 'Content: '.`,
     });
 
     return output;
@@ -61,7 +61,7 @@ export async function generateImageForArticle(
 Title: ${article.title}
 Content: ${article.content}
 
-The description should be vivid and specific, suitable for generating an image that represents the article's theme and tone.`,
+The description should be vivid and specific, suitable for generating an image that represents the article's theme and tone. Keep them in a realistic style. Do not prepended the description with 'Image Description: ' or any similar text.`,
     });
     const result = await generateText({
       model: hackclub("google/gemini-3-pro-image-preview"),
@@ -101,7 +101,7 @@ export async function moderateArticle(article: {
   try {
     const { output } = await generateText({
       model: hackclub("qwen/qwen3-32b"),
-      system: `You are an AI that moderates articles for a satirical news organization. Determine if the article is appropriate for publication based on its content and tone.`,
+      system: "You are an AI that moderates articles for a satirical news organization. Determine if the article is appropriate for publication based on its content and tone.",
       output: Output.object({
         schema: z.object({
           isAppropriate: z.boolean(),
@@ -131,17 +131,37 @@ export async function generateExcerpt(article: {
     // Assuming generateExcerptForArticle is a function that generates an excerpt
     const excerpt = await generateText({
       model: hackclub("qwen/qwen3-32b"),
-      system: `You are an AI that generates concise and engaging excerpts for articles in a satirical news organization.`,
+      system: "You are an AI that generates concise and engaging excerpts for articles in a satirical news organization.",
       prompt: `Generate a concise and engaging excerpt for the following article:
 
 Title: ${article.title}
 Content: ${article.content}
 
-The excerpt should capture the essence of the article in a humorous and appealing way.`,
+The excerpt should capture the essence of the article in a humorous and appealing way. Do not prepend the excerpt with 'Excerpt: ' or any similar text.`,
     });
     return excerpt.text;
   } catch (error) {
     console.error("Error generating excerpt:", error);
+    throw error;
+  }
+}
+
+export async function tagArticle(article: { title: string; content: string }, tags: Array<{ id: number; name: string }>) {
+  try {
+    const { output } = await generateText({
+      model: hackclub("qwen/qwen3-32b"),
+      system: `You are an AI that generates relevant tags for articles in a satirical news organization. here are the tags to choose from: ${tags.map((tag) => tag.name).join(", ")}`,
+      output: Output.array({ element: z.object({ tag: z.string(), relevance: z.number().min(0).max(1) }) }),
+      prompt: `Generate a list of relevant tags for the following article:
+
+Title: ${article.title}
+Content: ${article.content}
+
+The tags should be concise and reflect the main themes and topics of the article.`,
+    });
+    return output;
+  } catch (error) {
+    console.error("Error tagging article:", error);
     throw error;
   }
 }

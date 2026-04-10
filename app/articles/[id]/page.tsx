@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import db from "@/lib/db/drizzle";
-import { articlesTable, reportersTable } from "@/lib/db/schema";
+import { articlesTable, reportersTable, tagsTable } from "@/lib/db/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
+import { Footer } from "@/components/footer";
 
 interface ArticleDetailPageProps {
   params: Promise<{ id: string }>;
@@ -39,13 +40,14 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
     })
     .from(articlesTable)
     .leftJoin(reportersTable, eq(articlesTable.reporterId, reportersTable.id))
-    .where(eq(articlesTable.id, parseInt(id, 10)));
+    .where(eq(articlesTable.id, Number.parseInt(id, 10)));
 
   if (result.length === 0) {
     notFound();
   }
 
   const article = result[0];
+  const tags = await db.select().from(tagsTable);
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
@@ -116,6 +118,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
           </Card>
         </div>
       </main>
+      <Footer tags={tags} />
     </div>
   );
 }

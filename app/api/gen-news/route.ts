@@ -1,5 +1,5 @@
 import { generateAllArticles } from "@/lib/articles-workflow";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { start } from "workflow/api";
 
 export async function GET(request: NextRequest) {

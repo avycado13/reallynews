@@ -6,10 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUpIcon } from "lucide-react";
 import db from "@/lib/db/drizzle";
 import { eq } from "drizzle-orm";
-import { articlesTable, reportersTable } from "@/lib/db/schema";
+import { articlesTable, reportersTable, tagsTable } from "@/lib/db/schema";
 import { Streamdown } from "streamdown";
+import Link from "next/link";
+import { Footer } from "@/components/footer";
 
-const categoryColorMap: { [key: string]: string } = {
+const tagColorMap: { [key: string]: string } = {
   Technology: "bg-blue-500",
   Business: "bg-green-500",
   Environment: "bg-emerald-500",
@@ -31,9 +33,9 @@ function formatDate(date: Date): string {
   return new Date(date).toLocaleDateString();
 }
 
-function getCategoryFromTitle(title: string): string {
-  const categories = Object.keys(categoryColorMap);
-  for (const cat of categories) {
+function gettagFromTitle(title: string): string {
+  const tags = Object.keys(tagColorMap);
+  for (const cat of tags) {
     if (title.toLowerCase().includes(cat.toLowerCase())) {
       return cat;
     }
@@ -58,14 +60,14 @@ export default async function Home() {
     .limit(10);
 
   const articles = articleRecords.map((article) => {
-    const category = getCategoryFromTitle(article.title);
+    const tag = gettagFromTitle(article.title);
     return {
       id: article.id,
       title: article.title,
-      excerpt: article.excerpt || article.content.substring(0, 150) + "...",
-      category,
-      date: formatDate(article.createdAt!),
-      image: categoryColorMap[category] || "bg-blue-500",
+      excerpt: article.excerpt || `${article.content.substring(0, 150)}...`,
+      tag,
+      date: formatDate(article.createdAt || new Date()),
+      image: tagColorMap[tag] || "bg-blue-500",
       author: article.reporterName || "Unknown",
     };
   });
@@ -75,16 +77,9 @@ export default async function Home() {
       ? articles[new Date().getDate() % articles.length]
       : null;
 
-  const categories = [
-    "Technology",
-    "Business",
-    "Environment",
-    "Sports",
-    "Entertainment",
-    "Health",
-  ];
+  const tags = await db.select().from(tagsTable);
 
-  const categoryColors: { [key: string]: string } = {
+  const tagColors: { [key: string]: string } = {
     Technology: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
     Business:
       "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
@@ -109,10 +104,10 @@ export default async function Home() {
                 <div className="md:col-span-2 p-6 flex flex-col justify-between">
                   <div>
                     <Badge
-                      className={categoryColors[featuredArticle.category]}
+                      className={tagColors[featuredArticle.tag]}
                       variant="secondary"
                     >
-                      {featuredArticle.category}
+                      {featuredArticle.tag}
                     </Badge>
                     <h2 className="text-3xl font-bold text-black dark:text-white mt-4 mb-3">
                       {featuredArticle.title}
@@ -139,7 +134,7 @@ export default async function Home() {
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="latest">Latest</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="tags">tags</TabsTrigger>
           </TabsList>
 
           {/* Latest Articles Tab */}
@@ -153,10 +148,10 @@ export default async function Home() {
                   <div className={`${article.image} h-48 w-full`} />
                   <div className="p-5">
                     <Badge
-                      className={categoryColors[article.category] + " mb-3"}
+                      className={`${tagColors[article.tag]} mb-3`}
                       variant="secondary"
                     >
-                      {article.category}
+                      {article.tag}
                     </Badge>
                     <h3 className="text-xl font-bold text-black dark:text-white mb-2">
                       {article.title}
@@ -187,10 +182,10 @@ export default async function Home() {
                     <div className="flex items-center gap-2 mb-3">
                       <TrendingUpIcon className="h-4 w-4 text-red-500" />
                       <Badge
-                        className={categoryColors[article.category]}
+                        className={tagColors[article.tag]}
                         variant="secondary"
                       >
-                        {article.category}
+                        {article.tag}
                       </Badge>
                     </div>
                     <h3 className="text-xl font-bold text-black dark:text-white mb-2">
@@ -209,29 +204,25 @@ export default async function Home() {
             </div>
           </TabsContent>
 
-          {/* Categories Tab */}
-          <TabsContent value="categories" className="space-y-0">
+          {/* tags Tab */}
+          <TabsContent value="tags" className="space-y-0">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {categories.map((category) => {
-                const categoryArticles = articles.filter(
-                  (a) => a.category === category
-                );
+              {tags.map((tag) => {
+                const tagArticles = articles.filter((a) => a.tag === tag.name);
                 return (
                   <Card
-                    key={category}
+                    key={tag.id}
                     className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-gray-200 dark:border-gray-800"
                   >
-                    <div
-                      className={`${categoryArticles[0]?.image} h-32 w-full`}
-                    />
+                    <div className={`${tagArticles[0]?.image} h-32 w-full`} />
                     <div className="p-5">
                       <h3 className="text-lg font-bold text-black dark:text-white mb-3">
-                        {category}
+                        {tag.name}
                       </h3>
                       <div className="space-y-2">
-                        {categoryArticles.slice(0, 2).map((article, idx) => (
+                        {tagArticles.slice(0, 2).map((article) => (
                           <p
-                            key={idx}
+                            key={article.id}
                             className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2"
                           >
                             {article.title}
@@ -254,113 +245,7 @@ export default async function Home() {
         </Tabs>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 mt-16">
-        <div className="max-w-6xl mx-auto px-4 py-12 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h4 className="font-bold text-black dark:text-white mb-4">
-                About
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Careers
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-black dark:text-white mb-4">
-                Legal
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Terms of Service
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-black dark:text-white mb-4">
-                Categories
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Technology
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Business
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="hover:text-black dark:hover:text-white"
-                  >
-                    Science
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-black dark:text-white mb-4">
-                Subscribe
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                Get the latest news delivered to your inbox
-              </p>
-              <Button size="sm" className="w-full">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-          <Separator className="my-6 bg-gray-200 dark:bg-gray-800" />
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            © 2025 reallynews. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer tags={tags} />
     </div>
   );
 }

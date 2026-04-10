@@ -96,7 +96,7 @@ ${context}`,
     console.log("[askWithSearch] Response length:", text.length, "characters");
     console.log(
       "[askWithSearch] Response preview:",
-      text.substring(0, 200) + "..."
+      `${text.substring(0, 200)}...`
     );
 
     const totalDuration = Date.now() - startTime;
